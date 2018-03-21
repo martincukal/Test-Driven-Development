@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>//Global declaration
+chan move_forward, street_continue, change, Dont_change, end;
+</declaration>
+	<template>
+		<name>Lane</name>
+		<declaration>// Lane's variables
+int street_length = 100;
+bool lane_changed = false;
+int sensor1 = 0;
+int sensor2 = 0; 
+
+// lanes positions
+bool rightLane = false;
+bool middleLane = false;
+
+
+</declaration>
+		<location id="id0" x="3535" y="-68">
+			<name x="3493" y="-102">end_of_street</name>
+		</location>
+		<location id="id1" x="3289" y="-68">
+			<name x="3270" y="-119">continue_on_street</name>
+		</location>
+		<location id="id2" x="2983" y="-323">
+			<name x="2949" y="-365">changing_lane</name>
+		</location>
+		<location id="id3" x="2983" y="-68">
+			<name x="2932" y="-42">check_carTwo_pos</name>
+		</location>
+		<location id="id4" x="2779" y="-68">
+			<name x="2637" y="-74">street_beginning</name>
+		</location>
+		<init ref="id4"/>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="synchronisation" x="3399" y="-68">end?</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="3060" y="-93">street_continue?</label>
+			<label kind="assignment" x="3061" y="-66">street_length++</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="3119" y="-289">lane_changed == true &amp;&amp; sensor1 == 0 &amp;&amp; sensor2 == 0</label>
+			<label kind="synchronisation" x="3034" y="-204">Dont_change?</label>
+			<label kind="assignment" x="3119" y="-263">lane_changed = false,
+rightLane = true,
+middleLane = false</label>
+		</transition>
+		<transition>
+			<source ref="id3"/>
+			<target ref="id2"/>
+			<label kind="guard" x="2618" y="-246">lane_changed == false &amp;&amp; sensor1 == 1 &amp;&amp; sensor2 == 1</label>
+			<label kind="synchronisation" x="2915" y="-170">change?</label>
+			<label kind="assignment" x="2618" y="-221">lane_changed = true, 
+rightLane = false,
+middleLane = true</label>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="synchronisation" x="2822" y="-93">move_forward?</label>
+			<label kind="assignment" x="2829" y="-66">street_length++</label>
+		</transition>
+	</template>
+	<template>
+		<name x="5" y="5">Car</name>
+		<declaration>// Cars variables
+bool lane_changed = false;
+bool carTwoPos = false;
+bool changed = false;
+int sensor1 = 0;
+int sensor2 = 0; 
+int position = 0;
+clock wait;
+
+// Lane's variables
+int street_length = 100;</declaration>
+		<location id="id5" x="-569" y="25">
+			<name x="-620" y="51">end_of_street</name>
+		</location>
+		<location id="id6" x="-68" y="-110">
+			<name x="-42" y="-119">perform_change_lane</name>
+		</location>
+		<location id="id7" x="-68" y="-110">
+		</location>
+		<location id="id8" x="-314" y="-110">
+			<name x="-365" y="-85">change_lane</name>
+		</location>
+		<location id="id9" x="-569" y="-110">
+			<name x="-620" y="-119">Start</name>
+		</location>
+		<init ref="id9"/>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-280" y="-48">wait &gt; 5</label>
+			<label kind="synchronisation" x="-208" y="-56">Dont_change!</label>
+			<label kind="assignment" x="-280" y="-24">changed = false</label>
+			<nail x="-72" y="48"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id7"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-221" y="-204">change!</label>
+			<label kind="assignment" x="-229" y="-170">position++,
+changed = true,
+wait = 0</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="-510" y="-51">end!</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="-510" y="-136">move_forward!</label>
+			<label kind="assignment" x="-501" y="-110">position++</label>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id8"/>
+			<label kind="guard" x="-385" y="-282">lane_changed == false</label>
+			<label kind="synchronisation" x="-361" y="-266">street_continue!</label>
+			<nail x="-231" y="-240"/>
+			<nail x="-384" y="-240"/>
+		</transition>
+	</template>
+	<system>// Place template instantiations here.
+carOne = Car();
+carTwo = Car();
+rLane = Lane();
+mLane = Lane();
+// List one or more processes to be composed into a system.
+system carOne, carTwo, rLane, mLane;
+    </system>
+	<queries>
+		<query>
+			<formula>A[] rLane.street_length &lt; 100 and mLane.street_length &gt; 100
+			</formula>
+			<comment>This case fails because the length of the middle-lane is greater than 100.
+			</comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt; rLane.street_length &lt;= 100 and mLane.street_length &lt;=  100
+			</formula>
+			<comment>The cars keep moving only if the length of the street is less than or equal to 100 meter
+			</comment>
+		</query>
+		<query>
+			<formula>A[] ((carOne.position == 5 and carOne.sensor1 == 1 and carOne.sensor2 ==1 and carOne.changed == true) imply (carTwo.position != 5 ))
+			</formula>
+			<comment>When the carOne's position is 5 and its sensors are 1, the car move to the middle-lane if and only if the carTwo's position is not 5
+			</comment>
+		</query>
+		<query>
+			<formula>A[] ((carOne.position == 5 and carOne.sensor1 == 1 and carOne.sensor2 ==1 and carOne.changed == true) imply (mLane.middleLane == true ))
+			</formula>
+			<comment>When the carOne's position is 5 and its sensors are 1, the car move to the middle-lane, means that middle lane value is true
+			</comment>
+		</query>
+	</queries>
+</nta>
